@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050f03">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Pomodoro Retro">
+<title>POMODOROMATIC-3000</title>
+<link rel="manifest" id="manifest-link">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --px:   #39ff14;
+    --px2:  #1aad0a;
+    --px3:  #0d5c07;
+    --px4:  #062903;
+    --dim:  #1a4d0f;
+    --screen: #050f03;
+    --bezel:  #242424;
+    --bezel2: #181818;
+    --bezel3: #2e2e2e;
+    --amber: #cf6e0a;
+    --red:   #e23a3a;
+  }
+
+  html, body {
+    min-height: 100%;
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  body {
+    padding: 1.5rem 1rem;
+    background: #0e0e0e;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 30px, rgba(57,255,20,0.015) 30px, rgba(57,255,20,0.015) 31px),
+      repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(57,255,20,0.015) 30px, rgba(57,255,20,0.015) 31px);
+  }
+
+  .machine {
+    background: var(--bezel);
+    border: 2px solid #333;
+    border-bottom: 4px solid #111;
+    border-right: 4px solid #111;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    padding: 18px 18px 14px;
+  }
+
+  .machine-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .brand-label {
+    color: #555;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .leds {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .led-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #333;
+    transition: background 0.2s;
+  }
+
+  .led.green  { background: var(--px); box-shadow: 0 0 6px var(--px2); }
+  .led.amber  { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .led.red    { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+  .led-label { color: #444; font-size: 8px; letter-spacing: 1px; }
+
+  .screen-frame {
+    background: #0a0a0a;
+    border: 3px solid #111;
+    border-radius: 6px;
+    padding: 3px;
+  }
+
+  .screen {
+    background: var(--screen);
+    border-radius: 4px;
+    padding: 16px 14px 12px;
+    position: relative;
+    overflow: hidden;
+    min-height: 320px;
+  }
+
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px, transparent 3px,
+      rgba(0,0,0,0.2) 3px, rgba(0,0,0,0.2) 4px
+    );
+    pointer-events: none;
+    border-radius: 4px;
+    z-index: 10;
+  }
+
+  .crt-corner {
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    background: radial-gradient(ellipse at center, transparent 70%, rgba(0,0,0,0.45) 100%);
+    pointer-events: none;
+    z-index: 9;
+  }
+
+  .screen-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .s-label {
+    color: var(--px2);
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .s-label-dim { color: var(--px3); font-size: 10px; letter-spacing: 1px; }
+
+  .mode-tabs {
+    display: flex;
+    border: 1px solid var(--px3);
+    margin-bottom: 10px;
+  }
+
+  .mtab {
+    flex: 1;
+    background: var(--screen);
+    border: none;
+    color: var(--px3);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    padding: 5px 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-right: 1px solid var(--px3);
+    transition: all 0.1s;
+  }
+
+  .mtab:last-child { border-right: none; }
+  .mtab.active { background: var(--px4); color: var(--px); }
+  .mtab:hover:not(.active) { color: var(--px2); }
+
+  .big-time {
+    color: var(--px);
+    font-family: 'VT323', monospace;
+    font-size: 90px;
+    line-height: 1;
+    text-align: center;
+    letter-spacing: 6px;
+    text-shadow: 0 0 10px rgba(57,255,20,0.3);
+    margin: 6px 0 2px;
+    transition: color 0.4s;
+  }
+
+  .big-time.break-mode { color: #f0a500; text-shadow: 0 0 10px rgba(240,165,0,0.3); }
+
+  .pb-wrap { margin: 8px 0; }
+
+  .pb-ascii {
+    color: var(--px3);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .pb-track {
+    background: var(--px4);
+    border: 1px solid var(--px3);
+    height: 10px;
+    position: relative;
+  }
+
+  .pb-fill {
+    height: 100%;
+    background: var(--px);
+    transition: width 1s linear;
+  }
+
+  .pb-fill.break-fill { background: #f0a500; }
+
+  .pb-notches {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    pointer-events: none;
+  }
+
+  .pb-notch { flex: 1; border-right: 1px solid var(--screen); }
+  .pb-notch:last-child { border-right: none; }
+
+  .dots-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 10px 0 6px;
+  }
+
+  .dot-px {
+    width: 14px;
+    height: 14px;
+    background: var(--dim);
+    border: 1px solid var(--px3);
+  }
+
+  .dot-px.done { background: var(--px); border-color: var(--px2); }
+  .dot-px.active {
+    background: var(--px2);
+    border-color: var(--px);
+    animation: pxpulse 1s ease-in-out infinite alternate;
+  }
+
+  @keyframes pxpulse { from { opacity: 0.5; } to { opacity: 1; } }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--px3);
+    margin: 10px 0;
+    opacity: 0.5;
+  }
+
+  .stats-row {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .stat-item { text-align: center; }
+  .stat-num {
+    color: var(--px);
+    font-family: 'VT323', monospace;
+    font-size: 30px;
+    line-height: 1;
+  }
+
+  .stat-lbl {
+    color: var(--px3);
+    font-size: 8px;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .task-line {
+    color: var(--px2);
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-top: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .notif-bar {
+    background: var(--px4);
+    border: 1px solid var(--px3);
+    border-radius: 0;
+    padding: 5px 8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9px;
+    color: var(--px3);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+
+  .notif-bar:hover { border-color: var(--px2); color: var(--px2); }
+  .notif-bar.enabled { border-color: var(--px2); color: var(--px2); }
+  .notif-bar .notif-status { margin-left: auto; }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 14px;
+  }
+
+  .btn-sec {
+    background: var(--bezel2);
+    border: 1px solid #444;
+    color: #888;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 8px 12px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.1s;
+  }
+
+  .btn-sec:hover { border-color: var(--px2); color: var(--px2); }
+  .btn-sec:active { transform: scale(0.96); }
+
+  .btn-main {
+    background: var(--px4);
+    border: 2px solid var(--px2);
+    color: var(--px);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 9px 28px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.12s;
+  }
+
+  .btn-main:hover { background: var(--px2); color: var(--screen); }
+  .btn-main:active { transform: scale(0.96); }
+
+  .settings-panel {
+    margin-top: 12px;
+    background: var(--bezel2);
+    border: 1px solid #333;
+    border-radius: 0;
+    padding: 10px 12px;
+  }
+
+  .s-panel-title {
+    color: #555;
+    font-size: 9px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .s-row { display: flex; gap: 8px; }
+  .s-item { flex: 1; }
+  .s-item-label { color: #555; font-size: 8px; letter-spacing: 1px; margin-bottom: 3px; }
+
+  .s-input {
+    width: 100%;
+    background: var(--screen);
+    border: 1px solid var(--px3);
+    color: var(--px);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    text-align: center;
+    padding: 4px;
+  }
+
+  .s-input:focus { outline: none; border-color: var(--px); }
+
+  .task-field {
+    background: var(--bezel2);
+    border: 1px solid #333;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    margin-top: 4px;
+  }
+
+  .task-prompt { color: var(--px2); font-size: 12px; white-space: nowrap; }
+
+  .task-inp {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--px);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    letter-spacing: 1px;
+  }
+
+  .task-inp::placeholder { color: #333; }
+
+  .install-btn-wrap {
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  #installBtn {
+    display: none;
+    background: transparent;
+    border: 1px solid #444;
+    color: #666;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    padding: 5px 14px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.1s;
+  }
+
+  #installBtn:hover { border-color: var(--px3); color: var(--px3); }
+
+  @media (max-width: 440px) {
+    .big-time { font-size: 72px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="machine">
+  <div class="machine-header">
+    <span class="brand-label">POMODOROMATIC-3000</span>
+    <div class="leds">
+      <div class="led-group">
+        <div class="led" id="ledRun"></div>
+        <span class="led-label">RUN</span>
+      </div>
+      <div class="led-group">
+        <div class="led" id="ledBreak"></div>
+        <span class="led-label">BRK</span>
+      </div>
+      <div class="led-group">
+        <div class="led" id="ledNotif"></div>
+        <span class="led-label">NTF</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="task-field">
+    <span class="task-prompt">TASK&gt;</span>
+    <input type="text" class="task-inp" id="taskInp" placeholder="escribe tu tarea aqui..." maxlength="40" />
+  </div>
+
+  <div id="notifBar" class="notif-bar" onclick="toggleNotifications()">
+    <span>&#9632;</span>
+    <span id="notifText">activar notificaciones del sistema</span>
+    <span class="notif-status" id="notifStatus">[ OFF ]</span>
+  </div>
+
+  <div class="mode-tabs">
+    <button class="mtab active" onclick="setMode('work')">[ ESTUDIO ]</button>
+    <button class="mtab" onclick="setMode('short')">[ DESCANSO ]</button>
+    <button class="mtab" onclick="setMode('long')">[ LARGO ]</button>
+  </div>
+
+  <div class="screen-frame">
+    <div class="screen">
+      <div class="scanlines"></div>
+      <div class="crt-corner"></div>
+
+      <div class="screen-row">
+        <span class="s-label" id="modeLabel">// ENFOCATE</span>
+        <span class="s-label-dim" id="cycleLabel">CICLO 1/4</span>
+      </div>
+
+      <div class="big-time" id="timeDisplay">25:00</div>
+
+      <div class="pb-wrap">
+        <div class="pb-ascii" id="pbAscii">PROGRESO ████████████████████</div>
+        <div class="pb-track">
+          <div class="pb-fill" id="pbFill" style="width:100%"></div>
+          <div class="pb-notches">
+            <div class="pb-notch"></div>
+            <div class="pb-notch"></div>
+            <div class="pb-notch"></div>
+            <div class="pb-notch"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dots-row" id="sessionDots"></div>
+
+      <hr class="divider">
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-num" id="statP">0</div>
+          <div class="stat-lbl">POMODOROS</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num" id="statM">0</div>
+          <div class="stat-lbl">MIN. HOY</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num" id="statS">0</div>
+          <div class="stat-lbl">RACHA</div>
+        </div>
+      </div>
+
+      <div class="task-line" id="taskLine">&gt; _</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-sec" onclick="resetTimer()" title="Reiniciar">[RST]</button>
+    <button class="btn-main" id="startBtn" onclick="toggleTimer()">&#9658; START</button>
+    <button class="btn-sec" onclick="skipSession()" title="Saltar">[SKP]</button>
+  </div>
+
+  <div class="settings-panel">
+    <div class="s-panel-title">&gt; CONFIG_</div>
+    <div class="s-row">
+      <div class="s-item">
+        <div class="s-item-label">ESTUDIO(MIN)</div>
+        <input type="number" class="s-input" id="setWork" value="25" min="1" max="90" onchange="applySettings()">
+      </div>
+      <div class="s-item">
+        <div class="s-item-label">DESCANSO</div>
+        <input type="number" class="s-input" id="setShort" value="5" min="1" max="30" onchange="applySettings()">
+      </div>
+      <div class="s-item">
+        <div class="s-item-label">LARGO</div>
+        <input type="number" class="s-input" id="setLong" value="15" min="5" max="60" onchange="applySettings()">
+      </div>
+    </div>
+  </div>
+
+  <div class="install-btn-wrap">
+    <button id="installBtn" onclick="installApp()">+ instalar como app</button>
+  </div>
+</div>
+
+<script>
+  /* ── Manifest inline ── */
+  const manifestData = {
+    name: "POMODOROMATIC-3000",
+    short_name: "Pomodoro",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#050f03",
+    theme_color: "#050f03",
+    description: "Temporizador Pomodoro retro para estudio",
+    icons: [
+      { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23050f03'/%3E%3Ctext x='50%25' y='60%25' font-family='monospace' font-size='320' fill='%2339ff14' text-anchor='middle'%3E%E2%8F%B1%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+  document.getElementById('manifest-link').href = URL.createObjectURL(blob);
+
+  /* ── State ── */
+  let durations = { work: 25, short: 5, long: 15 };
+  let mode = 'work';
+  let totalSeconds = 0, remaining = 0;
+  let running = false, interval = null;
+  let pomodorosToday = 0, minutesFocused = 0, streak = 0;
+  let sessionInCycle = 0;
+  const CYCLE = 4;
+  let notifEnabled = false;
+  let deferredPrompt = null;
+
+  const modeLabels  = { work: '// ENFOCATE', short: '// DESCANSA', long: '// RELAX_' };
+  const modeColors  = { work: '#39ff14', short: '#f0a500', long: '#f0a500' };
+
+  /* ── PWA install prompt ── */
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBtn').style.display = 'inline-block';
+  });
+
+  async function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') document.getElementById('installBtn').style.display = 'none';
+    deferredPrompt = null;
+  }
+
+  /* ── Notifications ── */
+  async function toggleNotifications() {
+    if (notifEnabled) {
+      notifEnabled = false;
+      updateNotifUI();
+      return;
+    }
+    if (!('Notification' in window)) {
+      alert('Tu navegador no soporta notificaciones.');
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    notifEnabled = perm === 'granted';
+    updateNotifUI();
+  }
+
+  function updateNotifUI() {
+    const bar = document.getElementById('notifBar');
+    const txt = document.getElementById('notifText');
+    const st  = document.getElementById('notifStatus');
+    const led = document.getElementById('ledNotif');
+    if (notifEnabled) {
+      bar.classList.add('enabled');
+      txt.textContent = 'notificaciones activadas';
+      st.textContent  = '[ ON ]';
+      led.classList.add('green');
+    } else {
+      bar.classList.remove('enabled');
+      txt.textContent = 'activar notificaciones del sistema';
+      st.textContent  = '[ OFF ]';
+      led.className = 'led';
+    }
+  }
+
+  function sendNotification(title, body) {
+    if (notifEnabled && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23050f03'/%3E%3Ctext x='50%25' y='62%25' font-family='monospace' font-size='40' fill='%2339ff14' text-anchor='middle'%3E%E2%8F%B1%3C/text%3E%3C/svg%3E", silent: false });
+    }
+  }
+
+  /* ── Web Audio beeps ── */
+  let audioCtx = null;
+
+  function getAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function beep(freq, duration, type = 'square', vol = 0.15) {
+    try {
+      const ctx = getAudio();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  function playWorkEnd() {
+    beep(880, 0.12); 
+    setTimeout(() => beep(1046, 0.12), 140);
+    setTimeout(() => beep(1318, 0.25), 280);
+  }
+
+  function playBreakEnd() {
+    beep(523, 0.12);
+    setTimeout(() => beep(659, 0.12), 140);
+    setTimeout(() => beep(784, 0.25), 280);
+  }
+
+  function playTick() {
+    beep(220, 0.04, 'square', 0.04);
+  }
+
+  /* ── Timer logic ── */
+  function buildDots() {
+    const c = document.getElementById('sessionDots');
+    c.innerHTML = '';
+    for (let i = 0; i < CYCLE; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot-px' + (i < sessionInCycle ? ' done' : (i === sessionInCycle && mode === 'work' ? ' active' : ''));
+      c.appendChild(d);
+    }
+    document.getElementById('cycleLabel').textContent = 'CICLO ' + (sessionInCycle + 1) + '/' + CYCLE;
+  }
+
+  function barChars(ratio) {
+    const total = 20, filled = Math.round(ratio * total);
+    return '█'.repeat(filled) + '░'.repeat(total - filled);
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('.mtab').forEach((t, i) => {
+      t.classList.toggle('active', ['work', 'short', 'long'][i] === m);
+    });
+    const isBreak = m !== 'work';
+    const ledBreak = document.getElementById('ledBreak');
+    ledBreak.className = 'led' + (isBreak ? ' amber' : '');
+    resetTimer(false);
+    buildDots();
+  }
+
+  function applySettings() {
+    durations.work  = parseInt(document.getElementById('setWork').value)  || 25;
+    durations.short = parseInt(document.getElementById('setShort').value) || 5;
+    durations.long  = parseInt(document.getElementById('setLong').value)  || 15;
+    resetTimer(false);
+  }
+
+  function resetTimer(stop = true) {
+    if (stop && running) toggleTimer();
+    totalSeconds = durations[mode] * 60;
+    remaining = totalSeconds;
+    updateDisplay();
+    updateBar(1);
+    document.getElementById('startBtn').textContent = '▸ START';
+    running = false;
+    document.getElementById('ledRun').className = 'led';
+    if (interval) { clearInterval(interval); interval = null; }
+  }
+
+  function toggleTimer() {
+    /* unlock AudioContext on first gesture */
+    try { getAudio().resume(); } catch(e) {}
+    if (running) {
+      clearInterval(interval);
+      running = false;
+      document.getElementById('startBtn').textContent = '▸ CONT.';
+      document.getElementById('ledRun').className = 'led';
+    } else {
+      if (remaining === 0) resetTimer(false);
+      running = true;
+      document.getElementById('startBtn').textContent = '|| PAUSE';
+      document.getElementById('ledRun').classList.add('green');
+      interval = setInterval(tick, 1000);
+    }
+  }
+
+  function tick() {
+    if (remaining <= 0) {
+      clearInterval(interval);
+      running = false;
+      onSessionEnd();
+      return;
+    }
+    remaining--;
+    updateDisplay();
+    updateBar(remaining / totalSeconds);
+    if (remaining <= 5 && remaining > 0) playTick();
+    if (remaining === 60) sendNotification('POMODOROMATIC', '¡Queda 1 minuto de ' + (mode === 'work' ? 'estudio' : 'descanso') + '!');
+  }
+
+  function updateDisplay() {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    document.getElementById('timeDisplay').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    const td = document.getElementById('timeDisplay');
+    td.className = 'big-time' + (mode !== 'work' ? ' break-mode' : '');
+    document.getElementById('modeLabel').textContent = modeLabels[mode];
+    const task = document.getElementById('taskInp').value.trim();
+    document.getElementById('taskLine').textContent = '> ' + (task || '_');
+  }
+
+  function updateBar(ratio) {
+    const fill = document.getElementById('pbFill');
+    fill.style.width = Math.round(ratio * 100) + '%';
+    fill.className = 'pb-fill' + (mode !== 'work' ? ' break-fill' : '');
+    document.getElementById('pbAscii').textContent = 'PROGRESO ' + barChars(ratio);
+  }
+
+  function onSessionEnd() {
+    document.getElementById('ledRun').className = 'led';
+    if (mode === 'work') {
+      playWorkEnd();
+      pomodorosToday++;
+      minutesFocused += durations.work;
+      streak++;
+      sessionInCycle = (sessionInCycle + 1) % CYCLE;
+      document.getElementById('statP').textContent = pomodorosToday;
+      document.getElementById('statM').textContent = minutesFocused;
+      document.getElementById('statS').textContent = streak;
+      const next = sessionInCycle === 0 ? 'long' : 'short';
+      const breakMsg = next === 'long' ? '¡Completaste 4 pomodoros! Toma un descanso largo.' : '¡Pomodoro completado! Toma un descanso corto.';
+      sendNotification('POMODOROMATIC — COMPLETADO', breakMsg);
+      setTimeout(() => { setMode(next); toggleTimer(); }, 700);
+    } else {
+      playBreakEnd();
+      sendNotification('POMODOROMATIC — ¡A ESTUDIAR!', 'Descanso terminado. ¡Hora de enfocarse!');
+      setTimeout(() => { setMode('work'); }, 700);
+    }
+    buildDots();
+    document.getElementById('startBtn').textContent = '▸ START';
+  }
+
+  function skipSession() {
+    try { getAudio().resume(); } catch(e) {}
+    clearInterval(interval);
+    running = false;
+    onSessionEnd();
+  }
+
+  /* ── Init ── */
+  resetTimer(false);
+  buildDots();
+
+  /* ── Service Worker ── */
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      self.addEventListener('install', () => self.skipWaiting());
+      self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+      self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response('offline'))));
+    `;
+    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+  }
+</script>
+</body>
+</html>
